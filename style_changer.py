@@ -1,96 +1,79 @@
 import os
 import openai
+openai.api_key = os.environ.get("OPENAI_API_KEY")
 
 
-def get_text_file_paths(directory):
-    """Gets paths for all text files in the specified directory.
-
-    Args:
-      directory: The directory where the documents are stored.
-
-    Returns:
-      A list of file paths as strings.
-
-    Raises:
-      FileNotFoundError: If the directory does not exist.
+def change_style(text, style):
     """
-    paths = []
-    if not os.path.exists(directory):
-        raise FileNotFoundError("The directory " + directory + " does not exist.")
-    for filename in os.listdir(directory):
-        if filename.endswith(".txt"):
-            path = os.path.join(directory, filename)
-            paths.append(path)
-    return paths
-
-
-def change_style(text, style, api_key):
-    """Changes the style of the document using a prompt and Langchain with OpenAI LLM.
+    Changes the style of text using OpenAI ChatCompletion API.
 
     Args:
       text: The text being modified by the LLM.
       style: The style (e.g. Film Noir) to change the text to.
-      api_key: Open AI API key loaded from environment variables.
 
     Returns:
-      A list of file paths as strings.
+      The changed text.
     """
-    prompt = ("Pretend you are an expert author and change the style of this document to " + style + ": " + text)
-    updated_text = openai.Completion.create(
-        prompt=prompt,
-        temperature=0.4,
-        max_tokens=1000,
-        engine="text-davinci-003",
-        api_key=api_key)
 
-    return updated_text["choices"][0]["text"]
+    response = openai.ChatCompletion.create(
+        model="gpt-3.5-turbo",
+        messages=[
+            {"role": "system", "content": "Pretend you are an expert author."},
+            {"role": "user", "content": "Change the style of this document to " + style + ": " + text}
+        ]
+    )
+
+    return response.choices[0].message.content
 
 
-def transform_documents(paths, style, api_key):
-    """ Transforms the style of all documents represented by the paths parameter.
+def transform_documents(path, style):
+    """
+    Transforms the style of the document represented by the path parameter.
 
     Args:
-      paths: Where the documents are located on disk.
+      path: Path to text.txt within this project.
       style: The style (e.g. Film Noir) to change the text to.
-      api_key: Open AI API key loaded from environment variables.
 
     Raises:
-    FileNotFoundError: If the directory does not exist.
+        PermissionError: If you don't have permissions to open or write.
+
+    Returns:
+        The updated text.
     """
-    for path in paths:
-        try:
-            f = open(path, errors="ignore")
-            text = f.read()
-        except PermissionError:
-            print("Error: You do not have permission to the file: " + path + ".")
-            print("Please try running with administrator privileges.")
-            continue
-        updated_text = change_style(text, style, api_key)
-        (file, extension) = os.path.splitext(path)
-        updated_file = os.path.join(file + "_ai.txt")
-        try:
-            f = open(updated_file, "w")
-            f.write(updated_text)
-        except PermissionError:
-            print("Error: You do not have permission for the file " + updated_file + ".")
-            print("Please try running with administrator privileges.")
-            continue
+    text = ""
+    try:
+        f = open(path, errors="ignore")
+        text = f.read()
+    except PermissionError:
+        print("Error: You do not have permission to open the file: " + path + ".")
+        print("Please try running this program with administrator privileges.")
+    updated_text = change_style(text, style)
+    (file, extension) = os.path.splitext(path)
+    updated_file = os.path.join(file + "_ai.txt")
+    try:
+        f = open(updated_file, "w")
+        f.write(updated_text)
+    except PermissionError:
+        print("Error: You do not have permission to write the file " + updated_file + ".")
+        print("Please try running this program with administrator privileges.")
+    return updated_text
 
 
 def main():
-    """This program changes the style of documents and saves them to a new file.
+    """
+    This program changes the style of the text in text.txt within this project and saves them to a new file.
 
     **Note:** Set the OPENAI_API_KEY environment variable before running this program.
     """
-    print("This program takes .txt files in a directory and changes the style they're written in, producing new files "
-          "as output")
+    print("This program changes the style of text in text.txt, producing a new file.")
     print("**Note:** The program is subject to Open AI rate limits.")
-    directory = input("Please enter the directory where your documents are stored: ")
-    paths = get_text_file_paths(directory)
-    style = input("What style do you want to change all documents to? ")
-    api_key = os.environ.get("OPENAI_API_KEY")
-    transform_documents(paths, style, api_key)
-    print("Your documents have been updated.")
+    directory = os.path.curdir
+    path = os.path.join(directory, "text.txt")
+    style = input("What style do you want to change the text to? ")
+
+    updated_text = transform_documents(path, style)
+    print("Your text has been updated and is in text_ai.txt")
+    print("New text: \n" + updated_text)
 
 
 if __name__ == "__main__":
