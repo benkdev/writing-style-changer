@@ -1,6 +1,7 @@
 import os
-import openai
-openai.api_key = os.environ.get("OPENAI_API_KEY")
+from openai import OpenAI
+client = OpenAI()
+OpenAI.api_key = os.getenv('OPENAI_API_KEY')
 
 
 def change_style(text, style):
@@ -15,7 +16,7 @@ def change_style(text, style):
       The changed text.
     """
 
-    response = openai.ChatCompletion.create(
+    completion = client.chat.completions.create(
         model="gpt-3.5-turbo",
         messages=[
             {"role": "system", "content": "Pretend you are an expert author."},
@@ -23,7 +24,7 @@ def change_style(text, style):
         ]
     )
 
-    return response.choices[0].message.content
+    return completion.choices[0].message.content
 
 
 def transform_documents(path, style):
