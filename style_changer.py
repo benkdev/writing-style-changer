@@ -17,7 +17,7 @@ def change_style(text, style):
     """
 
     completion = client.chat.completions.create(
-        model="gpt-3.5-turbo",
+        model="gpt-4o",
         messages=[
             {"role": "system", "content": "Pretend you are an expert author."},
             {"role": "user", "content": "Change the style of this document to " + style + ": " + text}
